@@ -19,7 +19,6 @@ services:
       - "8080:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ${CONFIG_ROOT}/traefik:/etc/traefik
     deploy:
       mode: global
       placement:
