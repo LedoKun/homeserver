@@ -275,7 +275,7 @@ services:
   blocky:
     image: spx01/blocky:latest
     volumes:
-      - ${BLOCKY_CONFIG}/blocky:/app/config
+      - ${BLOCKY_CONFIG}:/app/config
     deploy:
       placement:
         constraints:
