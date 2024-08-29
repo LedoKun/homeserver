@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   traefik:
-    image: traefik:v2.9
+    image: traefik
     command:
       - "--api.insecure=true"
       - "--providers.docker=true"
