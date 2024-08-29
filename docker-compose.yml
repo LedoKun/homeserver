@@ -19,7 +19,7 @@ services:
       - "8080:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ${TAILSCALE_PATH}/socket/tailscaled.sock:/var/run/tailscale/tailscaled.sock
+      - ${TAILSCALE_PATH}/socket:/var/run/tailscale
     deploy:
       mode: global
       placement:
