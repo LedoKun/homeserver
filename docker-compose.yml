@@ -19,6 +19,7 @@ services:
       - "8080:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${TAILSCALE_PATH}/tailscaled.sock:/var/run/tailscale/tailscaled.sock
     deploy:
       mode: global
       placement:
@@ -30,7 +31,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.traefik.rule=Host(`traefik.${DOMAIN}`)"
       - "traefik.http.routers.traefik.service=api@internal"
-      - "traefik.http.routers.traefik.tls.certresolver=tailscale"
+      # - "traefik.http.routers.traefik.tls.certresolver=tailscale"
       - "traefik.http.routers.traefik.entrypoints=websecure"
       - "traefik.http.routers.traefik.middlewares=traefik-auth"
       - "traefik.http.middlewares.test-auth.basicauth.usersfile=${TRAEFIK_USERSFILE}"
@@ -49,10 +50,10 @@ services:
       - TS_EXTRA_ARGS=--advertise-tags=tag:container
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
+      - TS_SOCKET=${TAILSCALE_PATH}/tailscaled.sock
     network_mode: host
     deploy:
       mode: global
-    command: tailscaled
 
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:develop
