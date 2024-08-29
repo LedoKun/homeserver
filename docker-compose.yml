@@ -260,7 +260,7 @@ services:
       - PGID=${PGID}
       - TZ=${TZ}
     volumes:
-      - ${CONFIG_ROOT}/boinc:/config
+      - ${BOINC_ROOT}:/config
     deploy:
       placement:
         constraints:
@@ -275,7 +275,7 @@ services:
   blocky:
     image: spx01/blocky:latest
     volumes:
-      - ${CONFIG_ROOT}/blocky:/app/config
+      - ${BLOCKY_CONFIG}/blocky:/app/config
     deploy:
       placement:
         constraints:
