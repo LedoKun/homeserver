@@ -164,11 +164,9 @@ services:
 
   jellyfin:
     image: lscr.io/linuxserver/jellyfin:latest
-    group_add:
-      - ${JELLYFIN_RENDER_GROUP}
     environment:
       - PUID=${PUID}
-      - PGID=${PGID}
+      - PGID=${JELLYFIN_RENDER_GROUP}
       - TZ=${TZ}
       - JELLYFIN_PublishedServerUrl=${JELLYFIN_IP}
       - DOCKER_MODS=${JELLYFIN_DOCKER_MODS}
