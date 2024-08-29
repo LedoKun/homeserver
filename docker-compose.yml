@@ -34,7 +34,7 @@ services:
       - "traefik.http.routers.traefik.tls.certresolver=tailscale"
       - "traefik.http.routers.traefik.entrypoints=websecure"
       - "traefik.http.routers.traefik.middlewares=traefik-auth"
-      - "traefik.http.middlewares.test-auth.basicauth.usersfile=${TRAEFIK_USERSFILE}/usersfile"
+      - "traefik.http.middlewares.test-auth.basicauth.usersfile=${TRAEFIK_USERSFILE}"
 
   tailscale:
     image: tailscale/tailscale
