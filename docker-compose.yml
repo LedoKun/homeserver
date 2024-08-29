@@ -2,16 +2,15 @@ version: '3.8'
 
 services:
   traefik:
-    image: traefik
+    image: traefik:v3.1
     command:
       - "--api.insecure=true"
       - "--providers.docker=true"
-      - "--providers.docker.swarmMode=true"
+      - "--providers.docker.swarmmode=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
       - "--entrypoints.dot.address=:853"
-      - "--certificatesresolvers.tailscale.tailscale=true"
     ports:
       - "80:80"
       - "443:443"
@@ -29,12 +28,12 @@ services:
       - traefik-public
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.traefik.rule=Host(`traefik.${DOMAIN}`)"
-      - "traefik.http.routers.traefik.service=api@internal"
-      # - "traefik.http.routers.traefik.tls.certresolver=tailscale"
-      - "traefik.http.routers.traefik.entrypoints=websecure"
-      - "traefik.http.routers.traefik.middlewares=traefik-auth"
-      - "traefik.http.middlewares.test-auth.basicauth.usersfile=${TRAEFIK_USERSFILE}"
+      - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.${DOMAIN}`)"
+      - "traefik.http.routers.traefik-dashboard.service=api@internal"
+      - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
+      - "traefik.http.routers.traefik-dashboard.middlewares=traefik-auth"
+      - "traefik.http.middlewares.traefik-auth.basicauth.usersfile=${TRAEFIK_USERSFILE}"
+      - "traefik.http.routers.traefik-dashboard.tls.certresolver=tailscale"
 
   tailscale:
     image: tailscale/tailscale
