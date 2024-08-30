@@ -207,6 +207,26 @@ services:
     networks:
       - caddy-public
 
+  scrutiny:
+    image: ghcr.io/analogj/scrutiny:master-omnibus
+    cap_add:
+      - SYS_RAWIO
+    volumes:
+      - /run/udev:/run/udev:ro
+      - ${SCRUTINY_PATH}:/opt/scrutiny/config
+      - ${SCRUTINY_PATH}/influxdb2:/opt/scrutiny/influxdb
+    devices:
+      - "/dev/sda"
+      - "/dev/sdb"
+      - "/dev/sdc"
+      - "/dev/sdd"
+    deploy:
+      placement:
+        constraints:
+          - node.hostname == baam
+    networks:
+      - caddy-public
+
 networks:
   caddy-public:
     external: true
