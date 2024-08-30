@@ -1,55 +1,31 @@
 version: '3.8'
 
 services:
-  traefik:
-    image: traefik:v3.1
-    command:
-      - "--providers.swarm=true"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-      - "--entrypoints.dot.address=:853"
+  caddy:
+    image: public.ecr.aws/docker/library/caddy:2-alpine
     ports:
       - "80:80"
       - "443:443"
-      - "853:853"
-      - "8080:8080"
+      - "443:443/udp"
+      - "13378:13378"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ${TAILSCALE_PATH}/socket:/var/run/tailscale
+      - /srv/caddy-dashboard/Caddyfile:/etc/caddy/Caddyfile
+      - /srv/caddy-dashboard/caddy/data:/data
+      - /srv/caddy-dashboard/caddy/config:/config
+      - /srv/caddy-dashboard/www:/usr/share/caddy
+      - /var/run/tailscale/tailscaled.sock:/var/run/tailscale/tailscaled.sock:z
+    cap_add:
+      - NET_ADMIN
     deploy:
       mode: global
       placement:
         constraints:
           - node.role == manager
     networks:
-      - traefik-public
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.${DOMAIN}`)"
-      - "traefik.http.routers.traefik-dashboard.service=api@internal"
-      - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
-      - "traefik.http.routers.traefik-dashboard.middlewares=traefik-auth"
-      - "traefik.http.middlewares.traefik-auth.basicauth.usersfile=${TRAEFIK_USERSFILE}"
-      - "traefik.http.routers.traefik-dashboard.tls.certresolver=tailscale"
-
-  tailscale:
-    image: tailscale/tailscale
-    volumes:
-      - ${TAILSCALE_PATH}:/var/lib/tailscale
-      - ${TAILSCALE_PATH}/socket:/var/run/tailscale
-      - /dev/net/tun:/dev/net/tun
-    cap_add:
-      - NET_ADMIN
-      - NET_RAW
-    environment:
-      - TS_AUTHKEY=${TAILSCALE_AUTHKEY}
-      - TS_ROUTES=10.0.0.0/24
-      - TS_EXTRA_ARGS=--advertise-tags=tag:container
-      - TS_STATE_DIR=/var/lib/tailscale
-      - TS_USERSPACE=false
-    network_mode: host
-    deploy:
-      mode: global
+      - caddy-public
+      - caddy-host
+    dns:
+      - 100.100.100.100
 
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:develop
@@ -63,14 +39,8 @@ services:
       placement:
         constraints:
           - node.hostname == baam
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.prowlarr.rule=Host(`prowlarr.${DOMAIN}`)"
-      - "traefik.http.services.prowlarr.loadbalancer.server.port=9696"
-      - "traefik.http.routers.prowlarr.tls.certresolver=tailscale"
-      - "traefik.http.routers.prowlarr.entrypoints=websecure"
     networks:
-      - traefik-public
+      - caddy-public
 
   sonarr:
     image: lscr.io/linuxserver/sonarr:latest
@@ -86,14 +56,8 @@ services:
       placement:
         constraints:
           - node.hostname == baam
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.sonarr.rule=Host(`sonarr.${DOMAIN}`)"
-      - "traefik.http.services.sonarr.loadbalancer.server.port=8989"
-      - "traefik.http.routers.sonarr.tls.certresolver=tailscale"
-      - "traefik.http.routers.sonarr.entrypoints=websecure"
     networks:
-      - traefik-public
+      - caddy-public
 
   radarr:
     image: lscr.io/linuxserver/radarr:latest
@@ -109,34 +73,26 @@ services:
       placement:
         constraints:
           - node.hostname == baam
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.radarr.rule=Host(`radarr.${DOMAIN}`)"
-      - "traefik.http.services.radarr.loadbalancer.server.port=7878"
     networks:
-      - traefik-public
+      - caddy-public
 
-  bazarr:
-    image: lscr.io/linuxserver/bazarr:latest
-    environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
-    volumes:
-      - ${CONFIG_ROOT}/bazarr:/config
-      - ${MEDIA_ROOT}/Movies:/movies
-      - ${MEDIA_ROOT}/TV:/tv
-      - ${DOWNLOAD_ROOT}:/downloads
-    deploy:
-      placement:
-        constraints:
-          - node.hostname == baam
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.bazarr.rule=Host(`bazarr.${DOMAIN}`)"
-      - "traefik.http.services.bazarr.loadbalancer.server.port=6767"
-    networks:
-      - traefik-public
+  # bazarr:
+  #   image: lscr.io/linuxserver/bazarr:latest
+  #   environment:
+  #     - PUID=${PUID}
+  #     - PGID=${PGID}
+  #     - TZ=${TZ}
+  #   volumes:
+  #     - ${CONFIG_ROOT}/bazarr:/config
+  #     - ${MEDIA_ROOT}/Movies:/movies
+  #     - ${MEDIA_ROOT}/TV:/tv
+  #     - ${DOWNLOAD_ROOT}:/downloads
+  #   deploy:
+  #     placement:
+  #       constraints:
+  #         - node.hostname == baam
+  #   networks:
+  #     - caddy-public
 
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
@@ -144,7 +100,6 @@ services:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
-      - WEBUI_PORT=${QBITTORRENT_WEBUI_PORT}
     volumes:
       - ${CONFIG_ROOT}/qbittorrent:/config
       - ${DOWNLOAD_ROOT}:/downloads
@@ -152,15 +107,11 @@ services:
       placement:
         constraints:
           - node.hostname == baam
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.qbittorrent.rule=Host(`qbittorrent.${DOMAIN}`)"
-      - "traefik.http.services.qbittorrent.loadbalancer.server.port=${QBITTORRENT_WEBUI_PORT}"
     ports:
       - "${QBITTORRENT_PORT}:${QBITTORRENT_PORT}"
       - "${QBITTORRENT_PORT}:${QBITTORRENT_PORT}/udp"
     networks:
-      - traefik-public
+      - caddy-public
 
   jellyfin:
     image: lscr.io/linuxserver/jellyfin:latest
@@ -179,35 +130,28 @@ services:
       placement:
         constraints:
           - node.hostname == baam
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.jellyfin.rule=Host(`jellyfin.${DOMAIN}`)"
-      - "traefik.http.services.jellyfin.loadbalancer.server.port=8096"
     devices:
       - /dev/dri:/dev/dri
     networks:
-      - traefik-public
+      - caddy-public
 
   filebrowser:
-    image: filebrowser/filebrowser:s6
+    image: filebrowser/filebrowser
+    user: ${PUID}:${PGID}
+    ports:
+      - "8088:80"
     environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
       - TZ=${TZ}
     volumes:
-      - ${CONFIG_ROOT}/filebrowser/config:/config
-      - ${CONFIG_ROOT}/filebrowser/database:/database
+      - ${CONFIG_ROOT}/filebrowser/filebrowser.json:/.filebrowser.json
+      - ${CONFIG_ROOT}/filebrowser/database.db:/database.db
       - ${DOWNLOAD_ROOT}:/srv
     deploy:
       placement:
         constraints:
           - node.hostname == baam
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.filebrowser.rule=Host(`files.${DOMAIN}`)"
-      - "traefik.http.services.filebrowser.loadbalancer.server.port=80"
     networks:
-      - traefik-public
+      - caddy-public
 
   audiobookshelf:
     image: ghcr.io/advplyr/audiobookshelf:latest
@@ -223,14 +167,8 @@ services:
       placement:
         constraints:
           - node.hostname == baam
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.audiobookshelf.rule=Host(`audiobooks.${DOMAIN}`)"
-      - "traefik.http.services.audiobookshelf.loadbalancer.server.port=80"
-      - "traefik.http.routers.audiobookshelf.tls.certresolver=tailscale"
-      - "traefik.http.routers.audiobookshelf.entrypoints=websecure"
     networks:
-      - traefik-public
+      - caddy-public
 
   readarr:
     image: lscr.io/linuxserver/readarr:develop
@@ -246,12 +184,8 @@ services:
       placement:
         constraints:
           - node.hostname == baam
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.readarr.rule=Host(`readarr.${DOMAIN}`)"
-      - "traefik.http.services.readarr.loadbalancer.server.port=8787"
     networks:
-      - traefik-public
+      - caddy-public
 
   boinc:
     image: lscr.io/linuxserver/boinc:latest
@@ -259,37 +193,23 @@ services:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
+      - SUBFOLDER=/boinc/
     volumes:
       - ${BOINC_ROOT}:/config
+      - /var/run/docker.sock:/var/run/docker.sock:z
+    privileged: true
+    devices:
+      - /dev/dri:/dev/dri
     deploy:
       placement:
         constraints:
           - node.hostname == ledokun
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.boinc.rule=Host(`boinc.${DOMAIN}`)"
-      - "traefik.http.services.boinc.loadbalancer.server.port=8090"
     networks:
-      - traefik-public
-
-  blocky:
-    image: spx01/blocky:latest
-    volumes:
-      - ${BLOCKY_CONFIG}:/app/config.yml
-    deploy:
-      placement:
-        constraints:
-          - node.hostname == ledokun
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.blocky-dns.rule=Host(`dns.${DOMAIN}`)"
-      - "traefik.http.services.blocky-dns.loadbalancer.server.port=4343"
-      - "traefik.tcp.routers.blocky-dot.rule=HostSNI(`*`)"
-      - "traefik.tcp.routers.blocky-dot.entrypoints=dot"
-      - "traefik.tcp.services.blocky-dot.loadbalancer.server.port=853"
-    networks:
-      - traefik-public
+      - caddy-public
 
 networks:
-  traefik-public:
+  caddy-public:
     external: true
+  caddy-host:
+    external:
+      name: "host"
