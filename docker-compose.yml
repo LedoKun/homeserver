@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   caddy:
-    image: public.ecr.aws/docker/library/caddy:2-alpine
+    image: caddy:2-alpine
     ports:
       - "80:80"
       - "443:443"
