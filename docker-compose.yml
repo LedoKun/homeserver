@@ -193,6 +193,17 @@ services:
     networks:
       - caddy-public
 
+  blocky:
+    image: spx01/blocky:latest
+    ports:
+      - "853:853"
+    volumes:
+      - ${CONFIG_ROOT}/blocky:/app/config
+    deploy:
+      mode: global
+    networks:
+      - caddy-public
+
 networks:
   caddy-public:
     external: true
