@@ -12,13 +12,16 @@ x-common-deploy: &common-deploy
 
 services:
   caddy:
-    image: caddy:2-alpine
+    image: caddy:2-layer4-alpine
+    build: ./caddy-layer4
     ports:
       - "80:80"
       - "443:443"
       - "443:443/udp"
       - "${AUDIOBOOKSHELF_WEBUI_PORT}:${AUDIOBOOKSHELF_WEBUI_PORT}"
       - "${AUDIOBOOKSHELF_WEBUI_PORT}:${AUDIOBOOKSHELF_WEBUI_PORT}/udp"
+      - "853:853"
+      - "853:853/udp"
     volumes:
       - ${CONFIG_ROOT}/caddy/Caddyfile:/etc/caddy/Caddyfile
       - ${CONFIG_ROOT}/caddy/data:/data
