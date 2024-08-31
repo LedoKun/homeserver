@@ -1,5 +1,18 @@
 version: '3.8'
 
+env_file:
+  - stack.env
+
+x-common-env: &common-env
+  PUID: ${PUID}
+  PGID: ${PGID}
+  TZ: ${TZ}
+
+x-common-deploy: &common-deploy
+  placement:
+    constraints:
+      - node.hostname == baam
+
 services:
   caddy:
     image: caddy:2-alpine
@@ -7,12 +20,13 @@ services:
       - "80:80"
       - "443:443"
       - "443:443/udp"
-      - "13378:13378"
+      - "${AUDIOBOOKSHELF_WEBUI_PORT}:${AUDIOBOOKSHELF_WEBUI_PORT}"
+      - "${AUDIOBOOKSHELF_WEBUI_PORT}:${AUDIOBOOKSHELF_WEBUI_PORT}/udp"
     volumes:
-      - /srv/caddy-dashboard/Caddyfile:/etc/caddy/Caddyfile
-      - /srv/caddy-dashboard/caddy/data:/data
-      - /srv/caddy-dashboard/caddy/config:/config
-      - /srv/caddy-dashboard/www:/usr/share/caddy
+      - ${CONFIG_ROOT}/caddy/Caddyfile:/etc/caddy/Caddyfile
+      - ${CONFIG_ROOT}/caddy/data:/data
+      - ${CONFIG_ROOT}/caddy/config:/config
+      - ${CONFIG_ROOT}/caddy/www:/usr/share/caddy
       - /var/run/tailscale/tailscaled.sock:/var/run/tailscale/tailscaled.sock:z
     cap_add:
       - NET_ADMIN
@@ -30,83 +44,49 @@ services:
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:develop
     environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
+      <<: *common-env
     volumes:
       - ${CONFIG_ROOT}/prowlarr:/config
     deploy:
-      placement:
-        constraints:
-          - node.hostname == baam
+      <<: *common-deploy
     networks:
       - caddy-public
 
   sonarr:
     image: lscr.io/linuxserver/sonarr:latest
     environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
+      <<: *common-env
     volumes:
       - ${CONFIG_ROOT}/sonarr:/config
-      - ${MEDIA_ROOT}/TV:/tv
-      - ${DOWNLOAD_ROOT}:/downloads
+      - ${MEDIA_ROOT}/public/TV:/tv
+      - ${MEDIA_ROOT}:/downloads
     deploy:
-      placement:
-        constraints:
-          - node.hostname == baam
+      <<: *common-deploy
     networks:
       - caddy-public
 
   radarr:
     image: lscr.io/linuxserver/radarr:latest
     environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
+      <<: *common-env
     volumes:
       - ${CONFIG_ROOT}/radarr:/config
-      - ${MEDIA_ROOT}/Movies:/movies
-      - ${DOWNLOAD_ROOT}:/downloads
+      - ${MEDIA_ROOT}/public/Movies:/movies
+      - ${MEDIA_ROOT}:/downloads
     deploy:
-      placement:
-        constraints:
-          - node.hostname == baam
+      <<: *common-deploy
     networks:
       - caddy-public
-
-  # bazarr:
-  #   image: lscr.io/linuxserver/bazarr:latest
-  #   environment:
-  #     - PUID=${PUID}
-  #     - PGID=${PGID}
-  #     - TZ=${TZ}
-  #   volumes:
-  #     - ${CONFIG_ROOT}/bazarr:/config
-  #     - ${MEDIA_ROOT}/Movies:/movies
-  #     - ${MEDIA_ROOT}/TV:/tv
-  #     - ${DOWNLOAD_ROOT}:/downloads
-  #   deploy:
-  #     placement:
-  #       constraints:
-  #         - node.hostname == baam
-  #   networks:
-  #     - caddy-public
 
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
     environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
+      <<: *common-env
     volumes:
       - ${CONFIG_ROOT}/qbittorrent:/config
-      - ${DOWNLOAD_ROOT}:/downloads
+      - ${MEDIA_ROOT}:/downloads
     deploy:
-      placement:
-        constraints:
-          - node.hostname == baam
+      <<: *common-deploy
     ports:
       - "${QBITTORRENT_PORT}:${QBITTORRENT_PORT}"
       - "${QBITTORRENT_PORT}:${QBITTORRENT_PORT}/udp"
@@ -116,20 +96,17 @@ services:
   jellyfin:
     image: lscr.io/linuxserver/jellyfin:latest
     environment:
-      - PUID=${PUID}
-      - PGID=${JELLYFIN_RENDER_GROUP}
-      - TZ=${TZ}
-      - JELLYFIN_PublishedServerUrl=${JELLYFIN_IP}
-      - DOCKER_MODS=${JELLYFIN_DOCKER_MODS}
+      <<: *common-env
+      PGID: ${JELLYFIN_RENDER_GROUP}
+      JELLYFIN_PublishedServerUrl: ${JELLYFIN_IP}
+      DOCKER_MODS: ${JELLYFIN_DOCKER_MODS}
     volumes:
       - ${CONFIG_ROOT}/jellyfin:/config
-      - ${MEDIA_ROOT}/TV:/data/tvshows
-      - ${MEDIA_ROOT}/Anime:/data/anime
-      - ${MEDIA_ROOT}/Movies:/data/movies
+      - ${MEDIA_ROOT}/public/TV:/data/tvshows
+      - ${MEDIA_ROOT}/public/Anime:/data/anime
+      - ${MEDIA_ROOT}/public/Movies:/data/movies
     deploy:
-      placement:
-        constraints:
-          - node.hostname == baam
+      <<: *common-deploy
     devices:
       - /dev/dri:/dev/dri
     networks:
@@ -141,15 +118,13 @@ services:
     ports:
       - "8088:80"
     environment:
-      - TZ=${TZ}
+      TZ: ${TZ}
     volumes:
       - ${CONFIG_ROOT}/filebrowser/filebrowser.json:/.filebrowser.json
       - ${CONFIG_ROOT}/filebrowser/database.db:/database.db
-      - ${DOWNLOAD_ROOT}:/srv
+      - ${MEDIA_ROOT}:/srv
     deploy:
-      placement:
-        constraints:
-          - node.hostname == baam
+      <<: *common-deploy
     networks:
       - caddy-public
 
@@ -157,45 +132,38 @@ services:
     image: ghcr.io/advplyr/audiobookshelf:latest
     user: ${PUID}:${PGID}
     environment:
-      - TZ=${TZ}
+      TZ: ${TZ}
     volumes:
-      - ${MEDIA_ROOT}/Audiobooks:/audiobooks
-      - ${MEDIA_ROOT}/Podcasts:/podcasts
       - ${CONFIG_ROOT}/audiobookshelf/config:/config
       - ${CONFIG_ROOT}/audiobookshelf/metadata:/metadata
+      - ${MEDIA_ROOT}/public/Audiobooks:/audiobooks
+      - ${MEDIA_ROOT}/public/Podcasts:/podcasts
     deploy:
-      placement:
-        constraints:
-          - node.hostname == baam
+      <<: *common-deploy
     networks:
       - caddy-public
 
   readarr:
     image: lscr.io/linuxserver/readarr:develop
     environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
+      <<: *common-env
     volumes:
       - ${CONFIG_ROOT}/readarr:/config
-      - ${DOWNLOAD_ROOT}:/downloads
-      - ${MEDIA_ROOT}/Books:/books
+      - ${MEDIA_ROOT}:/downloads
+      - ${MEDIA_ROOT}/public/Books:/books
+      - ${MEDIA_ROOT}/public/Audiobooks:/audiobooks
     deploy:
-      placement:
-        constraints:
-          - node.hostname == baam
+      <<: *common-deploy
     networks:
       - caddy-public
 
   boinc:
     image: lscr.io/linuxserver/boinc:latest
     environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
-      - SUBFOLDER=/boinc/
+      <<: *common-env
+      SUBFOLDER: /boinc/
     volumes:
-      - ${BOINC_ROOT}:/config
+      - ${CONFIG_ROOT}/boinc:/config
       - /var/run/docker.sock:/var/run/docker.sock:z
     privileged: true
     devices:
@@ -213,17 +181,15 @@ services:
       - SYS_RAWIO
     volumes:
       - /run/udev:/run/udev:ro
-      - ${SCRUTINY_PATH}:/opt/scrutiny/config
-      - ${SCRUTINY_PATH}/influxdb2:/opt/scrutiny/influxdb
+      - ${CONFIG_ROOT}/scrutiny/config:/opt/scrutiny/config
+      - ${CONFIG_ROOT}/scrutiny/influxdb2:/opt/scrutiny/influxdb
     devices:
       - "/dev/sda"
       - "/dev/sdb"
       - "/dev/sdc"
       - "/dev/sdd"
     deploy:
-      placement:
-        constraints:
-          - node.hostname == baam
+      <<: *common-deploy
     networks:
       - caddy-public
 
