@@ -9,6 +9,8 @@ x-common-deploy: &common-deploy
   placement:
     constraints:
       - node.hostname == baam
+  restart_policy:
+    condition: on-failure
 
 services:
   caddy:
@@ -32,6 +34,8 @@ services:
       placement:
         constraints:
           - node.role == manager
+      restart_policy:
+        condition: on-failure
     networks:
       - caddy-public
       - caddy-host
@@ -104,8 +108,9 @@ services:
       - ${MEDIA_ROOT}/public/Movies:/data/movies
     deploy:
       <<: *common-deploy
-    devices:
-      - /dev/dri:/dev/dri
+    # Not working in Swarm mode
+    # devices:
+    #   - /dev/dri:/dev/dri
     networks:
       - caddy-public
 
@@ -161,14 +166,12 @@ services:
       SUBFOLDER: /boinc/
     volumes:
       - ${CONFIG_ROOT}/boinc:/config
-      - /var/run/docker.sock:/var/run/docker.sock:z
-    privileged: true
-    devices:
-      - /dev/dri:/dev/dri
     deploy:
       placement:
         constraints:
           - node.hostname == ledokun
+      restart_policy:
+        condition: on-failure
     networks:
       - caddy-public
 
@@ -198,6 +201,8 @@ services:
       - ${CONFIG_ROOT}/blocky/config.yml:/app/config.yml
     deploy:
       mode: global
+      restart_policy:
+        condition: on-failure
     networks:
       - caddy-public
       - caddy-host
@@ -216,6 +221,8 @@ services:
       WATCHTOWER_SCHEDULE: "0 0 4 * * *"
     deploy:
       mode: global
+      restart_policy:
+        condition: on-failure
     networks:
       - caddy-public
 
