@@ -195,7 +195,7 @@ services:
     ports:
       - "853:853"
     volumes:
-      - ${CONFIG_ROOT}/blocky:/app
+      - ${CONFIG_ROOT}/blocky/config.yml:/app/config.yml
     deploy:
       mode: global
     networks:
