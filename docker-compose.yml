@@ -1,8 +1,5 @@
 version: '3.8'
 
-env_files:
-  - stack.env
-
 x-common-env: &common-env
   PUID: ${PUID}
   PGID: ${PGID}
