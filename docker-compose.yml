@@ -223,5 +223,5 @@ networks:
   caddy-public:
     external: true
   caddy-host:
-    external:
-      name: "host"
+    name: host
+    external: true
