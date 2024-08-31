@@ -200,6 +200,11 @@ services:
       mode: global
     networks:
       - caddy-public
+      - caddy-host
+    dns:
+      - 1.1.1.1
+      - 1.0.0.1
+      - 100.100.100.100
 
   watchtower:
     image: containrrr/watchtower
