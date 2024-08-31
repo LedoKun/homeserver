@@ -204,6 +204,19 @@ services:
     networks:
       - caddy-public
 
+  watchtower:
+    image: containrrr/watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:z
+    environment:
+      <<: *common-env
+      WATCHTOWER_CLEANUP: "true"
+      WATCHTOWER_SCHEDULE: "0 0 4 * * *"
+    deploy:
+      mode: global
+    networks:
+      - caddy-public
+
 networks:
   caddy-public:
     external: true
