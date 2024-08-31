@@ -108,9 +108,8 @@ services:
       - ${MEDIA_ROOT}/public/Movies:/data/movies
     deploy:
       <<: *common-deploy
-    # Not working in Swarm mode
-    # devices:
-    #   - /dev/dri:/dev/dri
+    devices:
+      - /dev/dri:/dev/dri
     networks:
       - caddy-public
 
@@ -166,6 +165,10 @@ services:
       SUBFOLDER: /boinc/
     volumes:
       - ${CONFIG_ROOT}/boinc:/config
+      - /var/run/docker.sock:/var/run/docker.sock:z
+    privileged: true
+    devices:
+      - /dev/dri:/dev/dri
     deploy:
       placement:
         constraints:
