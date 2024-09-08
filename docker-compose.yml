@@ -15,6 +15,7 @@ x-common-deploy: &common-deploy
 services:
   caddy:
     image: caddy:2-alpine
+    user: ${PUID}:${PGID}
     ports:
       - "80:80"
       - "443:443"
@@ -200,6 +201,7 @@ services:
 
   blocky:
     image: spx01/blocky:latest
+    user: ${PUID}:${PGID}
     ports:
       - "853:853"
     volumes:
