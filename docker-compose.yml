@@ -207,8 +207,9 @@ services:
       - ${CONFIG_ROOT}/caddy/config:/caddy/config
     deploy:
       mode: global
-      restart_policy:
-        condition: on-failure
+      placement:
+        constraints:
+          - node.role == manager
     networks:
       - caddy-public
       - caddy-host
