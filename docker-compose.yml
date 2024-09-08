@@ -23,7 +23,7 @@ services:
       - "${AUDIOBOOKSHELF_WEBUI_PORT}:${AUDIOBOOKSHELF_WEBUI_PORT}/udp"
     volumes:
       - ${CONFIG_ROOT}/caddy/Caddyfile:/etc/caddy/Caddyfile
-      - ${CONFIG_ROOT}/caddy/data:/data
+      - c:/data
       - ${CONFIG_ROOT}/caddy/config:/config
       - ${CONFIG_ROOT}/caddy/www:/usr/share/caddy
       - /var/run/tailscale/tailscaled.sock:/var/run/tailscale/tailscaled.sock:z
@@ -204,7 +204,7 @@ services:
       - "853:853"
     volumes:
       - ${CONFIG_ROOT}/blocky/config.yml:/app/config.yml
-      - ${CONFIG_ROOT}/caddy/config:/caddy/config
+      - ${CONFIG_ROOT}/caddy/data:/caddy/data
     deploy:
       mode: global
       placement:
