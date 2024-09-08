@@ -204,6 +204,7 @@ services:
       - "853:853"
     volumes:
       - ${CONFIG_ROOT}/blocky/config.yml:/app/config.yml
+      - ${CONFIG_ROOT}/caddy/config:/caddy/config
     deploy:
       mode: global
       restart_policy:
